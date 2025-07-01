@@ -13,10 +13,8 @@ export interface FileUploadProps {
   className?: string;
 }
 
-export interface FileWithProgress {
+interface FileWithError {
   file: File;
-  progress: number;
-  status: 'pending' | 'uploading' | 'completed' | 'error';
   error?: string;
 }
 
@@ -29,12 +27,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   disabled = false,
   className,
 }) => {
-  const [selectedFiles, setSelectedFiles] = useState<FileWithProgress[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<FileWithError[]>([]);
   const [dragActive, setDragActive] = useState(false);
 
   const handleFiles = useCallback((files: File[]) => {
     const validFiles: File[] = [];
-    const newFiles: FileWithProgress[] = [];
+    const newFiles: FileWithError[] = [];
 
     files.forEach((file) => {
       let isValid = true;
@@ -54,18 +52,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       if (isValid) {
         validFiles.push(file);
-        newFiles.push({
-          file,
-          progress: 0,
-          status: 'pending',
-        });
+        newFiles.push({ file });
       } else {
-        newFiles.push({
-          file,
-          progress: 0,
-          status: 'error',
-          error,
-        });
+        newFiles.push({ file, error });
       }
     });
 
@@ -143,7 +132,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       {/* File List */}
       {selectedFiles.length > 0 && (
         <div className="mt-4 space-y-2">
-          {selectedFiles.map((fileWithProgress, index) => (
+          {selectedFiles.map((fileWithError, index) => (
             <div
               key={index}
               className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
@@ -151,30 +140,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <div className="flex items-center space-x-2 flex-1">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">
-                    {fileWithProgress.file.name}
+                    {fileWithError.file.name}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {formatFileSize(fileWithProgress.file.size)}
+                    {formatFileSize(fileWithError.file.size)}
                   </p>
                   
-                  {fileWithProgress.status === 'error' && (
+                  {fileWithError.error && (
                     <div className="flex items-center mt-1">
                       <AlertCircle className="h-4 w-4 text-red-500 mr-1" />
-                      <p className="text-xs text-red-600">{fileWithProgress.error}</p>
-                    </div>
-                  )}
-                  
-                  {fileWithProgress.status === 'uploading' && (
-                    <div className="mt-1">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${fileWithProgress.progress}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {fileWithProgress.progress}%
-                      </p>
+                      <p className="text-xs text-red-600">{fileWithError.error}</p>
                     </div>
                   )}
                 </div>

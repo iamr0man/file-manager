@@ -46,6 +46,49 @@ monorepo/
 - ✅ Kafka события при загрузке/удалении
 - ✅ Синхронизация S3 ↔ PostgreSQL
 
+## S3↔DB Synchronization
+
+The platform includes an automated synchronization job that ensures consistency between S3 storage and the database. This job runs hourly and:
+
+- Adds missing database records for files found in S3
+- Removes database records for files that no longer exist in S3
+- Publishes events for any changes made during synchronization
+
+### Configuration
+
+The sync job can be configured using environment variables:
+
+```env
+SYNC_SCHEDULE="0 * * * *"  # Cron schedule (default: every hour)
+LOG_LEVEL="info"           # Logging level (default: info)
+```
+
+### Running the Sync Job
+
+In production, the sync job starts automatically with the API server when `NODE_ENV=production`.
+
+To run the sync job manually:
+
+```bash
+# Run once
+npm run sync -w @file-manager/api
+
+# Or with custom schedule
+SYNC_SCHEDULE="*/30 * * * *" npm run sync -w @file-manager/api
+```
+
+### Monitoring
+
+The sync job logs all operations using Pino logger:
+- File additions and removals
+- Errors and warnings
+- Job start/completion times
+
+Monitor the logs using:
+```bash
+tail -f apps/api/logs/sync.log
+```
+
 ## Быстрый старт
 
 ### 1. Установка зависимостей

@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "jest", "@types/jest"],
+    "module": "CommonJS",
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "isolatedModules": false,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/**/*.test.ts",
+    "src/**/__tests__/**/*.ts",
+    "src/**/__mocks__/**/*.ts",
+    "jest.setup.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+} 

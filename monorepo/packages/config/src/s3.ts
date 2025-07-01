@@ -39,5 +39,5 @@ export const generateFileKey = (mimeType: string, fileName: string): string => {
   // Группируем по типу файла
   const typePrefix = mimeType.split('/')[0]; // image, video, application, etc.
   
-  return `files/${typePrefix}/${timestamp}-${random}.${extension}`;
+  return `files/files/${typePrefix}/${timestamp}-${random}.${extension}`;
 }; 

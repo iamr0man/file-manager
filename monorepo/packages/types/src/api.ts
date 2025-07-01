@@ -51,8 +51,15 @@ export const FileDeleteResponseSchema = ApiSuccessSchema.extend({
   }),
 });
 
+export const FileDownloadUrlResponseSchema = ApiSuccessSchema.extend({
+  data: z.object({
+    url: z.string().url(),
+  }),
+});
+
 // TypeScript типы
 export type FileUploadRequest = z.infer<typeof FileUploadRequestSchema>;
 export type FileUploadResponse = z.infer<typeof FileUploadResponseSchema>;
 export type FileListResponse = z.infer<typeof FileListResponseSchema>;
-export type FileDeleteResponse = z.infer<typeof FileDeleteResponseSchema>; 
+export type FileDeleteResponse = z.infer<typeof FileDeleteResponseSchema>;
+export type FileDownloadUrlResponse = z.infer<typeof FileDownloadUrlResponseSchema>; 

@@ -9,8 +9,9 @@ export const FileSchema = z.object({
   size: z.number().int().min(1).max(200 * 1024 * 1024), // 200MB limit
   mimeType: z.string().min(1),
   uploadedBy: z.string().min(1), // пока строка, позже можно связать с User
-  createdAt: z.date(),
-  updatedAt: z.date().optional(),
+  createdAt: z.union([z.string(), z.date()]),
+  updatedAt: z.union([z.string(), z.date()]).optional(),
+  previewUrl: z.string().url().nullable(),
 });
 
 export const FileCreateSchema = z.object({
@@ -29,11 +30,4 @@ export type FileCreate = z.infer<typeof FileCreateSchema>;
 export type FileUpdate = z.infer<typeof FileUpdateSchema>;
 
 // Дополнительные типы для UI
-export type FileListItem = Pick<File, 'id' | 'name' | 'size' | 'mimeType' | 'createdAt'>;
-
-export type FileUploadProgress = {
-  fileId: string;
-  progress: number; // 0-100
-  status: 'pending' | 'uploading' | 'completed' | 'error';
-  error?: string;
-}; 
+export type FileListItem = Pick<File, 'id' | 'name' | 'size' | 'mimeType' | 'createdAt' | 'url'>; 

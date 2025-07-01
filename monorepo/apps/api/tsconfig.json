@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "types": ["node", "jest"],
+    "typeRoots": ["./node_modules/@types"],
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "module": "CommonJS",
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "isolatedModules": false
+  },
+  "include": [
+    "src/**/*",
+    "prisma/**/*",
+    "jest.setup.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ],
+  "references": [
+    { "path": "../../packages/types" },
+    { "path": "../../packages/config" }
+  ]
+} 
