@@ -1,12 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { singleUploadHandler, batchUploadHandler } from '../handlers/upload';
 
-// Регистрация маршрутов для работы с файлами
+// Register routes for file operations
 export const registerFileRoutes = async (fastify: FastifyInstance) => {
-  // Одиночная загрузка файла
+  // Single file upload
   fastify.post('/api/files/upload', singleUploadHandler);
 
-  // Мультизагрузка файлов
+  // Batch file upload
   fastify.post('/api/files/upload-batch', batchUploadHandler);
 
   console.log('📁 File routes registered:');

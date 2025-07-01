@@ -4,7 +4,7 @@ import { FileUpload } from '@file-manager/ui';
 import { trpc } from '../utils/trpc';
 import { uploadFiles } from '../utils/upload';
 import type { File as FileType } from '@file-manager/types';
-import { FiSearch, FiChevronLeft, FiChevronRight, FiDownload, FiTrash2, FiEye } from 'react-icons/fi';
+import { FiSearch, FiChevronLeft, FiChevronRight, FiDownload, FiTrash2, FiEye, FiCheckCircle, FiAlertCircle, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 type SortField = 'name' | 'size' | 'createdAt';
@@ -15,6 +15,7 @@ const MAX_PREVIEW_SIZE = 20 * 1024 * 1024; // 20MB
 
 const Home: NextPage = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [previewFile, setPreviewFile] = useState<FileType & { previewUrl: string | null } | null>(null);
@@ -38,17 +39,45 @@ const Home: NextPage = () => {
         id: toastId,
       });
 
-      await uploadFiles(files);
+      const result = await uploadFiles(files);
       await refetch();
+      
+      // Track uploaded files for visual feedback
+      const uploadedFileNames = result.files
+        ?.filter((f: any) => f.success)
+        ?.map((f: any) => f.filename) || [];
+      
+      setUploadedFiles(uploadedFileNames);
+      
+      // Clear uploaded files indicator after 3 seconds
+      setTimeout(() => {
+        setUploadedFiles([]);
+      }, 3000);
       
       // Clear the selected files
       setSelectedFiles([]);
 
-      // Show success notification
-      toast.success(`Successfully uploaded ${files.length} file${files.length > 1 ? 's' : ''}!`, {
-        id: toastId,
-        duration: 3000,
-      });
+      // Show detailed success/warning notification
+      if (result.successfulFiles > 0) {
+        let message = `Successfully uploaded ${result.successfulFiles} file${result.successfulFiles > 1 ? 's' : ''}`;
+        
+        if (result.skippedFiles > 0) {
+          message += `, skipped ${result.skippedFiles} unsupported file${result.skippedFiles > 1 ? 's' : ''}`;
+        }
+        
+        if (result.failedFiles > 0) {
+          message += `, ${result.failedFiles} failed`;
+        }
+        
+        toast.success(message, {
+          id: toastId,
+          duration: 4000,
+        });
+      } else {
+        toast.error('No files were uploaded. Check file types and try again.', {
+          id: toastId,
+        });
+      }
     } catch (error) {
       console.error('Upload failed:', error);
       toast.error(error instanceof Error ? error.message : 'Upload failed. Please try again.', {
@@ -79,9 +108,17 @@ const Home: NextPage = () => {
     try {
       toast.loading('Downloading file...', { id: toastId });
       
+      // Get signed download URL from the API using fetch
+      const response = await fetch(`http://localhost:3001/trpc/getDownloadUrl?input=${encodeURIComponent(JSON.stringify({ id: file.id }))}`);
+      const downloadResponse = await response.json();
+      
+      if (!downloadResponse.result.data.success) {
+        throw new Error(downloadResponse.result.data.error);
+      }
+      
       // Create a temporary link element
       const link = document.createElement('a');
-      link.href = file.url;
+      link.href = downloadResponse.result.data.data.url;
       link.download = file.name;
       document.body.appendChild(link);
       link.click();
@@ -207,6 +244,43 @@ const Home: NextPage = () => {
               multiple={true}
               disabled={false}
             />
+            
+            {/* Supported File Types Info */}
+            <div className="mt-2 text-xs text-gray-500">
+              <details className="cursor-pointer">
+                <summary className="hover:text-gray-700">Supported file types</summary>
+                <div className="mt-1 pl-4">
+                  Images: JPEG, PNG, GIF, WebP, SVG<br/>
+                  Documents: PDF, Word, Excel<br/>
+                  Text: TXT, CSV, JSON, HTML<br/>
+                  Archives: ZIP, RAR, 7Z<br/>
+                  Media: MP4, MPEG, QuickTime, MP3, WAV, OGG<br/>
+                  Other: DMG files
+                </div>
+              </details>
+            </div>
+            
+            {/* Selected Files Preview */}
+            {selectedFiles.length > 0 && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h3 className="text-sm font-medium text-blue-900 mb-2">
+                  Selected Files ({selectedFiles.length})
+                </h3>
+                <div className="space-y-2">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-blue-700">{file.name}</span>
+                        <span className="text-blue-500">({formatFileSize(file.size)})</span>
+                      </div>
+                      <div className="text-blue-600">
+                        <FiCheckCircle size={16} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Search and Filter Section */}
@@ -280,7 +354,12 @@ const Home: NextPage = () => {
                   paginatedFiles.map((file) => (
                     <tr key={file.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {file.name}
+                        <div className="flex items-center space-x-2">
+                          <span>{file.name}</span>
+                          {uploadedFiles.includes(file.name) && (
+                            <FiCheckCircle className="text-green-500 animate-pulse" size={16} />
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatFileSize(file.size)}

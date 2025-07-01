@@ -12,16 +12,16 @@ import {
   FileDownloadUrlResponse
 } from '@file-manager/types';
 
-// Инициализация tRPC
+// Initialize tRPC
 const t = initTRPC.create();
 
-// Экспорт роутера и процедур
+// Export router and procedures
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
-// Файловый роутер
+// File router
 export const fileRouter = router({
-  // Загрузка файла
+  // File upload
   upload: publicProcedure
     .input(z.object({
       name: z.string().min(1).max(255),
@@ -29,11 +29,11 @@ export const fileRouter = router({
       size: z.number().int().min(1).max(200 * 1024 * 1024), // 200MB
       mimeType: z.string().min(1),
       uploadedBy: z.string().min(1),
-      fileBuffer: z.instanceof(Buffer), // Буфер файла
+      fileBuffer: z.instanceof(Buffer), // File buffer
     }))
     .mutation(async ({ input }): Promise<ApiSuccess<FileType> | ApiError> => {
       try {
-        // 1. Загружаем файл в S3
+        // 1. Upload file to S3
         const { key } = await s3Service.uploadFile(
           input.fileBuffer,
           input.mimeType,
@@ -42,7 +42,7 @@ export const fileRouter = router({
 
         const url = `${DEFAULT_CONFIG.endpoint}/${DEFAULT_CONFIG.bucket}/${key}`;
 
-        // 2. Сохраняем метаданные в БД
+        // 2. Save metadata to DB
         const fileRecord = await prisma.file.create({
           data: {
             name: input.name,
@@ -55,7 +55,7 @@ export const fileRouter = router({
           },
         });
 
-        // 3. Публикуем событие в Kafka
+        // 3. Publish event to Kafka
         await publishFileUploadedEvent({
           fileId: fileRecord.id,
           fileName: fileRecord.name,
@@ -83,7 +83,7 @@ export const fileRouter = router({
       }
     }),
 
-  // Получение списка файлов
+  // Get file list
   list: publicProcedure
     .input(z.object({
       uploadedBy: z.string().optional(),
@@ -127,7 +127,7 @@ export const fileRouter = router({
       }
     }),
 
-  // Удаление файла
+  // Delete file
   delete: publicProcedure
     .input(z.object({
       id: z.string().cuid(),
@@ -182,7 +182,7 @@ export const fileRouter = router({
       }
     }),
 
-  // Получение информации о файле
+  // Get file information
   getById: publicProcedure
     .input(z.object({
       id: z.string().cuid(),
@@ -208,6 +208,47 @@ export const fileRouter = router({
           success: false,
           error: error instanceof Error ? error.message : 'Failed to get file',
           code: 'GET_ERROR',
+        };
+      }
+    }),
+
+  // Get download URL for file
+  getDownloadUrl: publicProcedure
+    .input(z.object({
+      id: z.string().cuid(),
+    }))
+    .query(async ({ input }): Promise<FileDownloadUrlResponse | ApiError> => {
+      try {
+        const file = await prisma.file.findUnique({
+          where: { id: input.id },
+        });
+
+        if (!file) {
+          return {
+            success: false,
+            error: 'File not found',
+            code: 'FILE_NOT_FOUND',
+          };
+        }
+
+        // Extract S3 key from the stored URL
+        const s3Key = extractKeyFromUrl(file.url);
+        
+        // Generate signed URL for download (expires in 5 minutes)
+        const downloadUrl = await s3Service.getSignedUrl(s3Key, 300);
+
+        return {
+          success: true,
+          data: {
+            url: downloadUrl,
+          },
+        };
+      } catch (error) {
+        console.error('Get download URL error:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to generate download URL',
+          code: 'DOWNLOAD_URL_ERROR',
         };
       }
     }),

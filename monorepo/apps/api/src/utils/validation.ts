@@ -1,7 +1,7 @@
-import path from 'path';
+import * as path from 'path';
 import { z } from 'zod';
 
-// Константы для валидации
+// Validation constants
 export const VALIDATION_LIMITS = {
   MAX_FILE_SIZE: 1024 * 1024 * 1024, // 1GB
   MAX_FILES_BATCH: 10,
@@ -9,7 +9,7 @@ export const VALIDATION_LIMITS = {
   MAX_FILENAME_LENGTH: 255,
 } as const;
 
-// Список разрешенных MIME типов (расширяемый)
+// List of allowed MIME types (extensible)
 export const ALLOWED_MIME_TYPES = [
   // Images
   'image/jpeg',
@@ -50,7 +50,7 @@ export const ALLOWED_MIME_TYPES = [
   'application/x-apple-diskimage',
 ] as const;
 
-// Схема валидации для файла
+// File validation schema
 export const FileValidationSchema = z.object({
   filename: z.string()
     .min(VALIDATION_LIMITS.MIN_FILENAME_LENGTH)
@@ -62,14 +62,14 @@ export const FileValidationSchema = z.object({
 
 export type ValidatedFile = z.infer<typeof FileValidationSchema>;
 
-// Результат валидации
+// Validation result
 export interface ValidationResult {
   success: boolean;
   error?: string;
   code?: string;
 }
 
-// Валидация одного файла
+// Single file validation
 export const validateFile = (fileData: {
   filename: string;
   mimetype: string;
@@ -77,10 +77,10 @@ export const validateFile = (fileData: {
   buffer: Buffer;
 }): ValidationResult => {
   try {
-    // Основная валидация через Zod
+    // Main validation through Zod
     FileValidationSchema.parse(fileData);
     
-    // Проверка MIME типа
+    // Check MIME type
     if (!ALLOWED_MIME_TYPES.includes(fileData.mimetype as any)) {
       return {
         success: false,
@@ -89,7 +89,7 @@ export const validateFile = (fileData: {
       };
     }
     
-    // Проверка расширения файла
+    // Check file extension
     const ext = path.extname(fileData.filename).toLowerCase();
     if (!isExtensionValid(ext, fileData.mimetype)) {
       return {
@@ -99,7 +99,7 @@ export const validateFile = (fileData: {
       };
     }
     
-    // Проверка содержимого файла (простая проверка заголовков)
+    // Check file content (simple header check)
     if (!isFileContentValid(fileData.buffer, fileData.mimetype)) {
       return {
         success: false,
@@ -127,14 +127,14 @@ export const validateFile = (fileData: {
   }
 };
 
-// Валидация массива файлов
+// File array validation
 export const validateFiles = (files: Array<{
   filename: string;
   mimetype: string;
   size: number;
   buffer: Buffer;
 }>): ValidationResult => {
-  // Проверка количества файлов
+  // Check number of files
   if (files.length > VALIDATION_LIMITS.MAX_FILES_BATCH) {
     return {
       success: false,
@@ -151,7 +151,7 @@ export const validateFiles = (files: Array<{
     };
   }
   
-  // Валидация каждого файла
+  // Validate each file
   for (let i = 0; i < files.length; i++) {
     const result = validateFile(files[i]);
     if (!result.success) {
@@ -166,16 +166,16 @@ export const validateFiles = (files: Array<{
   return { success: true };
 };
 
-// Санитизация имени файла
+// Filename sanitization
 export const sanitizeFilename = (filename: string): string => {
-  // Удаляем опасные символы
+  // Remove dangerous characters
   const sanitized = filename
-    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_') // Заменяем опасные символы
-    .replace(/\.\./g, '_') // Убираем попытки выхода из директории
-    .replace(/^\.+/, '') // Убираем точки в начале
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_') // Replace dangerous characters
+    .replace(/\.\./g, '_') // Remove directory traversal attempts
+    .replace(/^\.+/, '') // Remove dots at the beginning
     .trim();
     
-  // Обеспечиваем минимальную длину
+  // Ensure minimum length
   if (sanitized.length === 0) {
     return 'unnamed_file';
   }
@@ -183,7 +183,7 @@ export const sanitizeFilename = (filename: string): string => {
   return sanitized;
 };
 
-// Проверка соответствия расширения MIME типу
+// Check extension matches MIME type
 const isExtensionValid = (extension: string, mimetype: string): boolean => {
   const mimeToExtensions: Record<string, string[]> = {
     'image/jpeg': ['.jpg', '.jpeg'],
@@ -198,25 +198,25 @@ const isExtensionValid = (extension: string, mimetype: string): boolean => {
     'video/mp4': ['.mp4'],
     'audio/mpeg': ['.mp3'],
     'application/x-apple-diskimage': ['.dmg'],
-    // Добавляем по мере необходимости
+    // Add as needed
   };
   
   const allowedExtensions = mimeToExtensions[mimetype];
   if (!allowedExtensions) {
-    // Если MIME тип не в нашем списке, пропускаем проверку расширения
+    // If MIME type is not in our list, skip extension check
     return true;
   }
   
   return allowedExtensions.includes(extension.toLowerCase());
 };
 
-// Базовая проверка содержимого файла по заголовкам
+// Basic file content check by headers
 const isFileContentValid = (buffer: Buffer, mimetype: string): boolean => {
   if (buffer.length < 4) return false;
   
   const header = buffer.subarray(0, 4);
   
-  // Проверяем некоторые распространенные форматы
+  // Check some common formats
   switch (mimetype) {
     case 'image/jpeg':
       return header[0] === 0xFF && header[1] === 0xD8;
@@ -229,12 +229,12 @@ const isFileContentValid = (buffer: Buffer, mimetype: string): boolean => {
     case 'application/zip':
       return header[0] === 0x50 && header[1] === 0x4B;
     default:
-      // Для остальных типов пропускаем проверку
+      // Skip check for other types
       return true;
   }
 };
 
-// Форматирование размера файла для пользователя
+// Format file size for user
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 B';
   

@@ -6,7 +6,7 @@ import { Button } from './button';
 export interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
   onRemoveFile?: (index: number) => void;
-  maxFileSize?: number; // в байтах
+  maxFileSize?: number; // in bytes
   acceptedTypes?: string[];
   multiple?: boolean;
   disabled?: boolean;
@@ -38,16 +38,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       let isValid = true;
       let error = '';
 
-      // Проверка размера файла
+      // Check file size
       if (file.size > maxFileSize) {
         isValid = false;
-        error = `Файл слишком большой (${Math.round(file.size / 1024 / 1024)}MB)`;
+        error = `File too large (${Math.round(file.size / 1024 / 1024)}MB)`;
       }
 
-      // Проверка типа файла
+      // Check file type
       if (acceptedTypes && !acceptedTypes.includes(file.type)) {
         isValid = false;
-        error = 'Неподдерживаемый тип файла';
+        error = 'Unsupported file type';
       }
 
       if (isValid) {
@@ -112,10 +112,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       >
         <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
         <p className="text-sm text-gray-600 mb-2">
-          Перетащите файлы сюда или нажмите для выбора
+          Drag files here or click to select
         </p>
         <p className="text-xs text-gray-500">
-          Максимальный размер: {formatFileSize(maxFileSize)}
+          Maximum size: {formatFileSize(maxFileSize)}
         </p>
         
         <input

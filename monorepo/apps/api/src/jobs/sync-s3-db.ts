@@ -51,7 +51,13 @@ export class S3DBSyncJob {
 
       logger.info('S3↔DB sync job completed successfully');
     } catch (error) {
-      logger.error('Error in S3↔DB sync job:', error);
+      logger.error('Error in S3↔DB sync job:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
+      });
+      console.error('Full sync job error:', error);
+      throw error; // Re-throw to propagate to caller
     } finally {
       this.isRunning = false;
     }

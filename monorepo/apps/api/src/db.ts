@@ -1,23 +1,23 @@
 import { PrismaClient } from '@prisma/client';
 
-// Создаем глобальную переменную для Prisma клиента в dev режиме
-// чтобы избежать пересоздания подключений при hot reload
+// Create global variable for Prisma client in dev mode
+// to avoid recreating connections on hot reload
 declare global {
   // eslint-disable-next-line no-var
   var __prisma: PrismaClient | undefined;
 }
 
-// Создаем Prisma клиент с логированием в dev режиме
+// Create Prisma client with logging in dev mode
 export const prisma = globalThis.__prisma || new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
 });
 
-// В dev режиме сохраняем клиент в глобальной переменной
+// In dev mode, save client in global variable
 if (process.env.NODE_ENV !== 'production') {
   globalThis.__prisma = prisma;
 }
 
-// Graceful shutdown - закрываем подключение при завершении процесса
+// Graceful shutdown - close connection on process exit
 process.on('beforeExit', async () => {
   await prisma.$disconnect();
 }); 

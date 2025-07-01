@@ -2,7 +2,7 @@ import { Kafka, Producer } from 'kafkajs';
 import { getKafkaConfig } from '@file-manager/config';
 import { FileUploadedEvent, FileDeletedEvent, KAFKA_TOPICS, FILE_EVENTS } from '@file-manager/types';
 
-// Создаем Kafka клиент
+// Create Kafka client
 const kafkaConfig = getKafkaConfig();
 const kafka = new Kafka({
   clientId: kafkaConfig.clientId,
@@ -14,7 +14,7 @@ const kafka = new Kafka({
 
 let producer: Producer | null = null;
 
-// Инициализация Kafka producer
+// Initialize Kafka producer
 export const initKafkaProducer = async (): Promise<void> => {
   try {
     producer = kafka.producer();
@@ -26,7 +26,7 @@ export const initKafkaProducer = async (): Promise<void> => {
   }
 };
 
-// Закрытие Kafka producer
+// Close Kafka producer
 export const closeKafkaProducer = async (): Promise<void> => {
   if (producer) {
     try {
@@ -38,7 +38,7 @@ export const closeKafkaProducer = async (): Promise<void> => {
   }
 };
 
-// Публикация события загрузки файла
+// Publish file upload event
 export const publishFileUploadedEvent = async (eventData: Omit<FileUploadedEvent['data'], 'fileId'> & { fileId: string }): Promise<void> => {
   if (!producer) {
     console.warn('⚠️ Kafka producer not initialized, skipping event publication');
@@ -69,11 +69,11 @@ export const publishFileUploadedEvent = async (eventData: Omit<FileUploadedEvent
     console.log(`✅ File uploaded event published: ${eventData.fileId}`);
   } catch (error) {
     console.error('❌ Failed to publish file uploaded event:', error);
-    // Не бросаем ошибку, чтобы не нарушать основной флоу загрузки файла
+    // Don't throw error to avoid disrupting main file upload flow
   }
 };
 
-// Публикация события удаления файла
+// Publish file delete event
 export const publishFileDeletedEvent = async (eventData: FileDeletedEvent['data']): Promise<void> => {
   if (!producer) {
     console.warn('⚠️ Kafka producer not initialized, skipping event publication');
@@ -104,7 +104,7 @@ export const publishFileDeletedEvent = async (eventData: FileDeletedEvent['data'
     console.log(`✅ File deleted event published: ${eventData.fileId}`);
   } catch (error) {
     console.error('❌ Failed to publish file deleted event:', error);
-    // Не бросаем ошибку, чтобы не нарушать основной флоу удаления файла
+    // Don't throw error to avoid disrupting main file delete flow
   }
 };
 

@@ -1,5 +1,16 @@
 interface UploadResponse {
-  uploadId: string;
+  success: boolean;
+  totalFiles: number;
+  successfulFiles: number;
+  failedFiles: number;
+  skippedFiles: number;
+  files: Array<{
+    filename: string;
+    success: boolean;
+    file: any;
+    error?: string;
+    skipped: boolean;
+  }>;
 }
 
 export const uploadFiles = async (files: File[]): Promise<UploadResponse> => {

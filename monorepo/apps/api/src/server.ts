@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import multipart from '@fastify/multipart';
+import cors from '@fastify/cors';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import { fileRouter } from './trpc/router';
 import { s3Service } from './services/s3';
@@ -7,22 +8,30 @@ import { initKafkaProducer } from './services/kafka';
 import { getDatabaseConfig } from '@file-manager/config';
 import { registerFileRoutes } from './routes/files';
 
-// Создаем Fastify сервер
+// Create Fastify server
 const fastify = Fastify({
   logger: {
     level: process.env.NODE_ENV === 'development' ? 'info' : 'warn',
   },
 });
 
-// Регистрируем плагин для загрузки файлов
+// Register CORS plugin
+fastify.register(cors, {
+  origin: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+});
+
+// Register plugin for file uploads
 fastify.register(multipart, {
   limits: {
     fileSize: 1024 * 1024 * 1024, // 1GB
-    files: 10, // максимум 10 файлов за раз
+    files: 10, // maximum 10 files at once
   },
 });
 
-// Регистрируем tRPC плагин
+// Register tRPC plugin
 fastify.register(fastifyTRPCPlugin, {
   prefix: '/trpc',
   trpcOptions: {
@@ -31,15 +40,15 @@ fastify.register(fastifyTRPCPlugin, {
   },
 });
 
-// Регистрируем маршруты для файлов
+// Register file routes
 fastify.register(registerFileRoutes);
 
-// Инициализируем Kafka producer
+// Initialize Kafka producer
 initKafkaProducer().catch((error) => {
   console.error('Failed to initialize Kafka producer:', error);
 });
 
-// Запускаем сервер
+// Start server
 const start = async () => {
   try {
     const { host, port } = getDatabaseConfig();

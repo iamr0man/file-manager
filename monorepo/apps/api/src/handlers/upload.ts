@@ -3,10 +3,10 @@ import { MultipartFile } from '@fastify/multipart';
 import { fileRouter } from '../trpc/router';
 import { validateFile, validateFiles, sanitizeFilename } from '../utils/validation';
 
-// Создаем caller для tRPC
+// Create caller for tRPC
 const trpcCaller = fileRouter.createCaller({});
 
-// Типы для request body
+// Types for request body
 interface SingleUploadQuery {
   uploadedBy?: string;
 }
@@ -15,13 +15,13 @@ interface BatchUploadQuery {
   uploadedBy?: string;
 }
 
-// Обработчик одиночной загрузки файла
+// Single file upload handler
 export const singleUploadHandler = async (
   request: FastifyRequest<{ Querystring: { uploadedBy?: string } }>,
   reply: FastifyReply
 ) => {
   try {
-    // Получаем файл из multipart
+    // Get file from multipart
     const file = await request.file();
     
     if (!file) {
@@ -32,7 +32,7 @@ export const singleUploadHandler = async (
       });
     }
 
-    // Читаем файл в буфер
+    // Read file into buffer
     const chunks: Buffer[] = [];
     for await (const chunk of file.file) {
       chunks.push(chunk);
@@ -40,7 +40,7 @@ export const singleUploadHandler = async (
     const buffer = Buffer.concat(chunks);
     const { uploadedBy = 'system' } = request.query;
 
-    // Подготавливаем данные для валидации
+    // Prepare data for validation
     const fileData = {
       filename: sanitizeFilename(file.filename),
       mimetype: file.mimetype,
@@ -48,7 +48,7 @@ export const singleUploadHandler = async (
       buffer,
     };
 
-    // Валидируем файл
+    // Validate file
     const validation = validateFile(fileData);
     if (!validation.success) {
       return reply.status(400).send({
@@ -69,9 +69,9 @@ export const singleUploadHandler = async (
         fileBuffer: buffer,
       });
 
-      if (!result.success) {
-        throw new Error(result.error || 'Upload failed');
-      }
+        if (!result.success) {
+          throw new Error(result.error || 'Upload failed');
+        }
 
       return reply.send({
         success: true,
@@ -96,20 +96,20 @@ export const singleUploadHandler = async (
   }
 };
 
-// Обработчик мультизагрузки файлов
+// Batch file upload handler
 export const batchUploadHandler = async (
   request: FastifyRequest<{ Querystring: { uploadedBy?: string } }>,
   reply: FastifyReply
 ) => {
   try {
-    // Получаем все файлы из multipart
+    // Get all files from multipart
     const files = request.files();
     const fileArray: Array<{
       data: MultipartFile;
       buffer: Buffer;
     }> = [];
 
-    // Читаем все файлы в память
+    // Read all files into memory
     for await (const file of files) {
       const chunks: Buffer[] = [];
       for await (const chunk of file.file) {
@@ -129,32 +129,44 @@ export const batchUploadHandler = async (
 
     const { uploadedBy = 'system' } = request.query;
 
-    // Подготавливаем данные для валидации
+    // Prepare data for validation
     const fileDataArray = fileArray.map(({ data, buffer }) => ({
       filename: sanitizeFilename(data.filename),
       mimetype: data.mimetype,
       size: buffer.length,
       buffer,
+      originalFilename: data.filename,
     }));
 
-    // Валидируем все файлы сразу
-    const validation = validateFiles(fileDataArray);
-    if (!validation.success) {
+    // Check if we have too many files
+    if (fileDataArray.length > 10) {
       return reply.status(400).send({
         success: false,
-        error: validation.error,
-        code: validation.code,
+        error: `Too many files. Maximum 10 allowed`,
+        code: 'TOO_MANY_FILES',
       });
     }
 
-    // Process each file
+    // Process each file individually - validate and upload valid files, skip invalid ones
     const results = await Promise.all(
       fileDataArray.map(async (fileData) => {
         try {
+          // Validate individual file
+          const validation = validateFile(fileData);
+          if (!validation.success) {
+            return {
+              success: false,
+              filename: fileData.originalFilename,
+              file: null,
+              error: validation.error,
+              skipped: true,
+            };
+          }
+
           // Upload file using tRPC mutation
           const result = await trpcCaller.upload({
             name: fileData.filename,
-            originalName: fileData.filename,
+            originalName: fileData.originalFilename,
             size: fileData.size,
             mimeType: fileData.mimetype,
             uploadedBy,
@@ -163,37 +175,42 @@ export const batchUploadHandler = async (
 
           return {
             success: result.success,
-            filename: fileData.filename,
+            filename: fileData.originalFilename,
             file: result.success ? result.data : null,
-            error: !result.success ? result.error : null,
+            error: !result.success ? (result as any).error || 'Upload failed' : null,
+            skipped: false,
           };
         } catch (error) {
-          console.error(`Failed to upload ${fileData.filename}:`, error);
+          console.error(`Failed to upload ${fileData.originalFilename}:`, error);
           return {
             success: false,
-            filename: fileData.filename,
+            filename: fileData.originalFilename,
             file: null,
             error: error instanceof Error ? error.message : 'Upload failed',
+            skipped: false,
           };
         }
       })
     );
 
     // Calculate overall success
-    const allSuccessful = results.every((result) => result.success);
     const successfulFiles = results.filter((result) => result.success);
-    const failedFiles = results.filter((result) => !result.success);
+    const failedFiles = results.filter((result) => !result.success && !result.skipped);
+    const skippedFiles = results.filter((result) => result.skipped);
+    const hasAnySuccess = successfulFiles.length > 0;
 
     return reply.send({
-      success: allSuccessful,
+      success: hasAnySuccess, // Success if at least one file was uploaded
       totalFiles: results.length,
       successfulFiles: successfulFiles.length,
       failedFiles: failedFiles.length,
+      skippedFiles: skippedFiles.length,
       files: results.map((result) => ({
         filename: result.filename,
         success: result.success,
         file: result.file,
         error: result.error,
+        skipped: result.skipped || false,
       })),
     });
 

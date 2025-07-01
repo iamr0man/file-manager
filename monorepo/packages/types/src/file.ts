@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Zod схемы для валидации
+// Zod schemas for validation
 export const FileSchema = z.object({
   id: z.string().cuid(),
   name: z.string().min(1).max(255),
@@ -8,7 +8,7 @@ export const FileSchema = z.object({
   url: z.string().url(),
   size: z.number().int().min(1).max(200 * 1024 * 1024), // 200MB limit
   mimeType: z.string().min(1),
-  uploadedBy: z.string().min(1), // пока строка, позже можно связать с User
+  uploadedBy: z.string().min(1), // currently string, later can be linked to User
   createdAt: z.union([z.string(), z.date()]),
   updatedAt: z.union([z.string(), z.date()]).optional(),
   previewUrl: z.string().url().nullable(),
@@ -24,10 +24,10 @@ export const FileCreateSchema = z.object({
 
 export const FileUpdateSchema = FileCreateSchema.partial();
 
-// TypeScript типы из Zod схем
+// TypeScript types from Zod schemas
 export type File = z.infer<typeof FileSchema>;
 export type FileCreate = z.infer<typeof FileCreateSchema>;
 export type FileUpdate = z.infer<typeof FileUpdateSchema>;
 
-// Дополнительные типы для UI
+// Additional types for UI
 export type FileListItem = Pick<File, 'id' | 'name' | 'size' | 'mimeType' | 'createdAt' | 'url'>; 
