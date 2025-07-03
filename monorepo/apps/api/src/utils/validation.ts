@@ -4,7 +4,7 @@ import { z } from 'zod';
 // Validation constants
 export const VALIDATION_LIMITS = {
   MAX_FILE_SIZE: 1024 * 1024 * 1024, // 1GB
-  MAX_FILES_BATCH: 10,
+  MAX_FILES_BATCH: 50, // Increased from 10 to 50
   MIN_FILENAME_LENGTH: 1,
   MAX_FILENAME_LENGTH: 255,
 } as const;

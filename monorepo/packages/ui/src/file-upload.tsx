@@ -1,11 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import { Upload, X, AlertCircle } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { clsx } from 'clsx';
-import { Button } from './button';
 
 export interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
-  onRemoveFile?: (index: number) => void;
   maxFileSize?: number; // in bytes
   acceptedTypes?: string[];
   multiple?: boolean;
@@ -13,53 +11,37 @@ export interface FileUploadProps {
   className?: string;
 }
 
-interface FileWithError {
-  file: File;
-  error?: string;
-}
-
 export const FileUpload: React.FC<FileUploadProps> = ({
   onFileSelect,
-  onRemoveFile,
-  maxFileSize = 200 * 1024 * 1024, // 200MB
+  maxFileSize = 1024 * 1024 * 1024, // 1GB
   acceptedTypes,
   multiple = true,
   disabled = false,
   className,
 }) => {
-  const [selectedFiles, setSelectedFiles] = useState<FileWithError[]>([]);
   const [dragActive, setDragActive] = useState(false);
 
   const handleFiles = useCallback((files: File[]) => {
     const validFiles: File[] = [];
-    const newFiles: FileWithError[] = [];
 
     files.forEach((file) => {
       let isValid = true;
-      let error = '';
 
       // Check file size
       if (file.size > maxFileSize) {
         isValid = false;
-        error = `File too large (${Math.round(file.size / 1024 / 1024)}MB)`;
       }
 
       // Check file type
       if (acceptedTypes && !acceptedTypes.includes(file.type)) {
         isValid = false;
-        error = 'Unsupported file type';
       }
 
       if (isValid) {
         validFiles.push(file);
-        newFiles.push({ file });
-      } else {
-        newFiles.push({ file, error });
       }
     });
 
-    setSelectedFiles(prev => [...prev, ...newFiles]);
-    
     if (validFiles.length > 0) {
       onFileSelect(validFiles);
     }
@@ -82,10 +64,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     }
   }, [handleFiles]);
 
-  const removeFile = useCallback((index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-    onRemoveFile?.(index);
-  }, [onRemoveFile]);
+
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -115,7 +94,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           Drag files here or click to select
         </p>
         <p className="text-xs text-gray-500">
-          Maximum size: {formatFileSize(maxFileSize)}
+          Maximum size: {formatFileSize(maxFileSize)} • Maximum 50 files per upload
+        </p>
+        <p className="text-xs text-gray-400 mt-1">
+          Files are uploaded in batches of 20 for large selections
         </p>
         
         <input
@@ -129,44 +111,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         />
       </div>
 
-      {/* File List */}
-      {selectedFiles.length > 0 && (
-        <div className="mt-4 space-y-2">
-          {selectedFiles.map((fileWithError, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-            >
-              <div className="flex items-center space-x-2 flex-1">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    {fileWithError.file.name}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {formatFileSize(fileWithError.file.size)}
-                  </p>
-                  
-                  {fileWithError.error && (
-                    <div className="flex items-center mt-1">
-                      <AlertCircle className="h-4 w-4 text-red-500 mr-1" />
-                      <p className="text-xs text-red-600">{fileWithError.error}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeFile(index)}
-                className="text-gray-400 hover:text-red-500"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+
     </div>
   );
 }; 

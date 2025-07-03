@@ -6,7 +6,7 @@ export const FileSchema = z.object({
   name: z.string().min(1).max(255),
   originalName: z.string().min(1).max(255),
   url: z.string().url(),
-  size: z.number().int().min(1).max(200 * 1024 * 1024), // 200MB limit
+  size: z.number().int().min(1).max(1024 * 1024 * 1024), // 1GB limit
   mimeType: z.string().min(1),
   uploadedBy: z.string().min(1), // currently string, later can be linked to User
   createdAt: z.union([z.string(), z.date()]),
@@ -17,7 +17,7 @@ export const FileSchema = z.object({
 export const FileCreateSchema = z.object({
   name: z.string().min(1).max(255),
   originalName: z.string().min(1).max(255),
-  size: z.number().int().min(1).max(200 * 1024 * 1024),
+  size: z.number().int().min(1).max(1024 * 1024 * 1024),
   mimeType: z.string().min(1),
   uploadedBy: z.string().min(1),
 });

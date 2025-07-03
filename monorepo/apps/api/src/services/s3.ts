@@ -167,7 +167,6 @@ class S3Service {
           previewUrl: this.isPreviewSupported(fileName) ? null : null, // We'll generate preview URLs on demand
         };
       });
-    console.log({files});
     return files;
   }
 

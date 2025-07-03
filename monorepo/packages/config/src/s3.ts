@@ -20,7 +20,7 @@ export const getS3Config = (): S3Config => {
     accessKeyId: process.env.S3_ACCESS_KEY_ID,
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     bucket: process.env.S3_BUCKET,
-    forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
+    forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== 'false', // Default to true for MinIO
   });
 };
 

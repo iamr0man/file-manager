@@ -139,10 +139,10 @@ export const batchUploadHandler = async (
     }));
 
     // Check if we have too many files
-    if (fileDataArray.length > 10) {
+    if (fileDataArray.length > 50) {
       return reply.status(400).send({
         success: false,
-        error: `Too many files. Maximum 10 allowed`,
+        error: `Too many files. Maximum 50 allowed`,
         code: 'TOO_MANY_FILES',
       });
     }

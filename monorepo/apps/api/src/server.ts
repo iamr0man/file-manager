@@ -27,7 +27,7 @@ fastify.register(cors, {
 fastify.register(multipart, {
   limits: {
     fileSize: 1024 * 1024 * 1024, // 1GB
-    files: 10, // maximum 10 files at once
+    files: 50, // maximum 50 files at once (increased from 10)
   },
 });
 

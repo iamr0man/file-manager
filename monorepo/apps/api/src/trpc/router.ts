@@ -26,7 +26,7 @@ export const fileRouter = router({
     .input(z.object({
       name: z.string().min(1).max(255),
       originalName: z.string().min(1).max(255),
-      size: z.number().int().min(1).max(200 * 1024 * 1024), // 200MB
+      size: z.number().int().min(1).max(1024 * 1024 * 1024), // 1GB
       mimeType: z.string().min(1),
       uploadedBy: z.string().min(1),
       fileBuffer: z.instanceof(Buffer), // File buffer
@@ -163,7 +163,6 @@ export const fileRouter = router({
           fileName: fileRecord.name,
           deletedBy: input.deletedBy,
         });
-
         return {
           success: true,
           data: {
