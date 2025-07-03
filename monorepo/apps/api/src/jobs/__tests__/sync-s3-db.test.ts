@@ -180,13 +180,16 @@ describe('S3DBSyncJob', () => {
       // Setup mocks to throw errors
       mockS3Service.listFiles.mockRejectedValue(new Error('S3 error'));
 
-      // Run the sync
-      await syncJob.start();
+      // Run the sync and expect it to throw
+      await expect(syncJob.start()).rejects.toThrow('S3 error');
 
       // Verify error was logged
-      expect(logger.error).toHaveBeenCalledWith('Error in S3↔DB sync job:', expect.any(Error));
+      expect(logger.error).toHaveBeenCalledWith('Error in S3↔DB sync job:', expect.objectContaining({
+        error: 'S3 error',
+        name: 'Error'
+      }));
 
-      // Verify the job can be run again
+      // Verify the job can be run again after error
       mockS3Service.listFiles.mockResolvedValue([]);
       mockPrisma.file.findMany.mockResolvedValue([]);
 
